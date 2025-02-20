@@ -14,88 +14,93 @@ function randomFloats(elementCount) {
   }
   return matrix
 }
-async function evalMatrixMultiplication(matrix1, matrix2) {
+
+function generateMatrix(size) {
+  return randomFloats(size)
+}
+
+/**
+ * Perform GPU computations
+ */
+async function matrixMultGPU(matrixA, matrixB) {
   /**
-   * Perform GPU computations
+   * 1. Initialize WebGPU
    */
-  ;(async () => {
-    /**
-     * 1. Initialize WebGPU
-     */
 
-    /** navigator.gpu.requestAdapter() accesses the GPU:
-     * returns javascript promise, asynchronously resolving with a GPU adapter
-     */
-    const adapter = await navigator.gpu.requestAdapter()
-    if (!adapter) {
-      console.log('Failed to get GPU adapter!')
-      return
-    }
-    /** adapter.requestDevice() returns a promise that resolves with a GPU device */
-    const device = await adapter.requestDevice()
+  /** navigator.gpu.requestAdapter() accesses the GPU:
+   * returns javascript promise, asynchronously resolving with a GPU adapter
+   */
+  const adapter = await navigator.gpu.requestAdapter()
+  if (!adapter) {
+    console.log('Failed to get GPU adapter!')
+    return
+  }
+  /** adapter.requestDevice() returns a promise that resolves with a GPU device */
+  const device = await adapter.requestDevice()
 
-    /**
-     * 2. Create Matrices
-     */
-    var matrixDimension = window.prompt(
-      'Enter matrix size to run benchmark (e.g. 512): '
-    )
-    if (matrixDimension > 2048) {
-      alert('Maximum matrix multiplication is 2048x2048')
-      return
-    }
-    const matrixElements = matrixDimension * matrixDimension
+  // /**
+  //  * 2. Create Matrices
+  //  */
+  // var matrixDimension = window.prompt(
+  //   'Enter matrix size to run benchmark (e.g. 512): '
+  // )
+  // if (matrixDimension > 2048) {
+  //   alert('Maximum matrix multiplication is 2048x2048')
+  //   return
+  // }
+  // const matrixElements = matrixDimension * matrixDimension
 
-    const matrixA = randomFloats(matrixElements)
-    const matrixB = randomFloats(matrixElements)
+  // const matrixA = randomFloats(matrixElements)
+  // const matrixB = randomFloats(matrixElements)
+  const matrixDimension = Math.sqrt(matrixA.length)
 
-    const matrixSize = matrixDimension * matrixDimension * 4
+  const matrixSize = matrixDimension * matrixDimension * 4
 
-    /**
-     * 3. Allocate Buffered Memory Accessible by GPU (GPU Memory Space)
-     */
+  /**
+   * 3. Allocate Buffered Memory Accessible by GPU (GPU Memory Space)
+   */
 
-    /** device.createBuffer() creates a GPU buffer object in a mapped state */
-    const gpuBufferMatrixA = device.createBuffer({
-      mappedAtCreation: true,
-      size: matrixSize,
-      usage: GPUBufferUsage.STORAGE
-    })
+  /** device.createBuffer() creates a GPU buffer object in a mapped state */
+  const gpuBufferMatrixA = device.createBuffer({
+    mappedAtCreation: true,
+    size: matrixSize,
+    usage: GPUBufferUsage.STORAGE
+  })
 
-    const gpuBufferMatrixB = device.createBuffer({
-      mappedAtCreation: true,
-      size: matrixSize,
-      usage: GPUBufferUsage.STORAGE
-    })
+  const gpuBufferMatrixB = device.createBuffer({
+    mappedAtCreation: true,
+    size: matrixSize,
+    usage: GPUBufferUsage.STORAGE
+  })
 
-    /** getMappedRange() is a GPU buffer method that retrieves the raw data buffer by the GPU */
-    const bufferMatrixA = gpuBufferMatrixA.getMappedRange()
-    const bufferMatrixB = gpuBufferMatrixB.getMappedRange()
+  /** getMappedRange() is a GPU buffer method that retrieves the raw data buffer by the GPU */
+  const bufferMatrixA = gpuBufferMatrixA.getMappedRange()
+  const bufferMatrixB = gpuBufferMatrixB.getMappedRange()
 
-    /** Write bytes to buffer */
-    new Float32Array(bufferMatrixA).set(matrixA)
-    new Float32Array(bufferMatrixB).set(matrixB)
+  /** Write bytes to buffer */
+  new Float32Array(bufferMatrixA).set(matrixA)
+  new Float32Array(bufferMatrixB).set(matrixB)
 
-    /** Unmap() allows the GPU to take control -- and prevents race conditions where GPU/CPU access memory at the same time */
-    gpuBufferMatrixA.unmap()
-    gpuBufferMatrixB.unmap()
+  /** Unmap() allows the GPU to take control -- and prevents race conditions where GPU/CPU access memory at the same time */
+  gpuBufferMatrixA.unmap()
+  gpuBufferMatrixB.unmap()
 
-    /** Result matrix */
-    // const bufferMatrixResult = Float32Array.BYTES_PER_ELEMENT * (2 + matrixA[0] * matrixB[1]);
-    const gpuBufferMatrixResult = device.createBuffer({
-      size: matrixSize,
-      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC
-    })
+  /** Result matrix */
+  // const bufferMatrixResult = Float32Array.BYTES_PER_ELEMENT * (2 + matrixA[0] * matrixB[1]);
+  const gpuBufferMatrixResult = device.createBuffer({
+    size: matrixSize,
+    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC
+  })
 
-    /**
-     * 4. Computer Shaders
-     */
+  /**
+   * 4. Computer Shaders
+   */
 
-    /** Compute shader code for multiplying matrices is written in WGSL, the WebGPU Shader Language.
-     * device.createShaderModule() creates the actual compute shader module to be run
-     */
-    const localSize = 8
-    const wgslSource = `
+  /** Compute shader code for multiplying matrices is written in WGSL, the WebGPU Shader Language.
+   * device.createShaderModule() creates the actual compute shader module to be run
+   */
+  const localSize = 8
+  const wgslSource = `
           struct Matrix {
             data: array<f32>
           };
@@ -123,132 +128,133 @@ async function evalMatrixMultiplication(matrix1, matrix2) {
             matrixC.data[resultIndex] = result;
           }`
 
-    /**
-     * 5. Pipeline Setup -- compute pipeline is the object that actually describes the compute operation we're going to perform
-     */
+  /**
+   * 5. Pipeline Setup -- compute pipeline is the object that actually describes the compute operation we're going to perform
+   */
 
-    /** device.createComputePipeline() creates pipeline.
-     * argument 1: bind group layout
-     * argument 2: compute stage for compute shader
-     */
-    const computePipeline = device.createComputePipeline({
-      layout: 'auto',
-      compute: {
-        module: device.createShaderModule({
-          code: wgslSource
-        }),
-        entryPoint: 'main'
-      }
-    })
+  /** device.createComputePipeline() creates pipeline.
+   * argument 1: bind group layout
+   * argument 2: compute stage for compute shader
+   */
+  const computePipeline = device.createComputePipeline({
+    layout: 'auto',
+    compute: {
+      module: device.createShaderModule({
+        code: wgslSource
+      }),
+      entryPoint: 'main'
+    }
+  })
 
-    /**
-     * 6. Bind Group Layouts and Bind Groups --
-     *      Bind Group Layout defines the input/output interface expected by the shader
-     *      Bind Group represents the actual input/output data for a shader
-     */
+  /**
+   * 6. Bind Group Layouts and Bind Groups --
+   *      Bind Group Layout defines the input/output interface expected by the shader
+   *      Bind Group represents the actual input/output data for a shader
+   */
 
-    /** bindGroupLayout associated GPU buffers to entries */
-    const bindGroupLayout = device.createBindGroupLayout({
-      entries: [
-        {
-          binding: 0,
-          visibility: GPUShaderStage.COMPUTE,
-          buffer: {
-            type: 'read-only-storage'
-          }
-        },
-        {
-          binding: 1,
-          visibility: GPUShaderStage.COMPUTE,
-          buffer: {
-            type: 'read-only-storage'
-          }
-        },
-        {
-          binding: 2,
-          visibility: GPUShaderStage.COMPUTE,
-          buffer: {
-            type: 'storage'
-          }
+  /** bindGroupLayout associated GPU buffers to entries */
+  const bindGroupLayout = device.createBindGroupLayout({
+    entries: [
+      {
+        binding: 0,
+        visibility: GPUShaderStage.COMPUTE,
+        buffer: {
+          type: 'read-only-storage'
         }
-      ]
-    })
+      },
+      {
+        binding: 1,
+        visibility: GPUShaderStage.COMPUTE,
+        buffer: {
+          type: 'read-only-storage'
+        }
+      },
+      {
+        binding: 2,
+        visibility: GPUShaderStage.COMPUTE,
+        buffer: {
+          type: 'storage'
+        }
+      }
+    ]
+  })
 
-    const bindGroup = device.createBindGroup({
-      layout: computePipeline.getBindGroupLayout(0),
-      entries: [
-        { binding: 0, resource: { buffer: gpuBufferMatrixA } },
-        { binding: 1, resource: { buffer: gpuBufferMatrixB } },
-        { binding: 2, resource: { buffer: gpuBufferMatrixResult } }
-      ]
-    })
+  const bindGroup = device.createBindGroup({
+    layout: computePipeline.getBindGroupLayout(0),
+    entries: [
+      { binding: 0, resource: { buffer: gpuBufferMatrixA } },
+      { binding: 1, resource: { buffer: gpuBufferMatrixB } },
+      { binding: 2, resource: { buffer: gpuBufferMatrixResult } }
+    ]
+  })
 
-    /** We've associated bind group with GPU buffers, and compute pipeline with bind group layout! */
+  /** We've associated bind group with GPU buffers, and compute pipeline with bind group layout! */
 
-    /**
-     * 7. Commands To GPU
-     */
+  /**
+   * 7. Commands To GPU
+   */
 
-    /** createCommandEncoder() creates a compute pass encoder used to encode GPU commands that perform matrix multiplcation */
-    const commandEncoder = device.createCommandEncoder()
+  /** createCommandEncoder() creates a compute pass encoder used to encode GPU commands that perform matrix multiplcation */
+  const commandEncoder = device.createCommandEncoder()
 
-    /** Set pipeline */
-    const passEncoder = commandEncoder.beginComputePass()
-    passEncoder.setPipeline(computePipeline)
+  /** Set pipeline */
+  const passEncoder = commandEncoder.beginComputePass()
+  passEncoder.setPipeline(computePipeline)
 
-    /** Set bind group at index 0 (corresponding with group(0) in WGSL code) */
-    passEncoder.setBindGroup(0, bindGroup)
+  /** Set bind group at index 0 (corresponding with group(0) in WGSL code) */
+  passEncoder.setBindGroup(0, bindGroup)
 
-    /** dispatchWorkgroups() is the process of encoding a command to execute a kernel function on a set of data */
-    passEncoder.dispatchWorkgroups(
-      Math.ceil(matrixDimension / localSize),
-      Math.ceil(matrixDimension / localSize)
-    )
+  /** dispatchWorkgroups() is the process of encoding a command to execute a kernel function on a set of data */
+  passEncoder.dispatchWorkgroups(
+    Math.ceil(matrixDimension / localSize),
+    Math.ceil(matrixDimension / localSize)
+  )
 
-    /* Ends the compute pass encoder */
-    passEncoder.end()
+  /* Ends the compute pass encoder */
+  passEncoder.end()
 
-    /**
-     * 8. Copy Buffer From GPU -- copy a GPU buffer to another GPU buffer and read it back
-     */
+  /**
+   * 8. Copy Buffer From GPU -- copy a GPU buffer to another GPU buffer and read it back
+   */
 
-    /** Second GPU buffer is created in an unmapped state this time */
-    const gpuBufferResult = device.createBuffer({
-      size: matrixSize,
-      usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
-    })
+  /** Second GPU buffer is created in an unmapped state this time */
+  const gpuBufferResult = device.createBuffer({
+    size: matrixSize,
+    usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
+  })
 
-    /** encoder.copyBufferToBuffer() adds the command to command queue for later execution */
-    commandEncoder.copyBufferToBuffer(
-      gpuBufferMatrixResult /** Source Buffer */,
-      0 /** Source Offset */,
-      gpuBufferResult /** Destination Buffer */,
-      0 /** Destination Offset */,
-      matrixSize /** Size of Memory */
-    )
+  /** encoder.copyBufferToBuffer() adds the command to command queue for later execution */
+  commandEncoder.copyBufferToBuffer(
+    gpuBufferMatrixResult /** Source Buffer */,
+    0 /** Source Offset */,
+    gpuBufferResult /** Destination Buffer */,
+    0 /** Destination Offset */,
+    matrixSize /** Size of Memory */
+  )
 
-    /** Start timing GPU execution */
-    var start = window.performance.now()
+  /** Start timing GPU execution */
+  var start = window.performance.now()
 
-    /** Finish encoding and submit commands to GPU device command queue */
-    const gpuCommands = commandEncoder.finish()
-    device.queue.submit([gpuCommands])
+  /** Finish encoding and submit commands to GPU device command queue */
+  const gpuCommands = commandEncoder.finish()
+  device.queue.submit([gpuCommands])
 
-    /**
-     * 9. Read Buffer From GPU
-     */
+  /**
+   * 9. Read Buffer From GPU
+   */
 
-    /** mapAsync() returns a promise that will resolve when the GPU buffer is mapped */
-    await gpuBufferResult.mapAsync(GPUMapMode.READ)
-    const finalBuffer = gpuBufferResult.getMappedRange()
+  /** mapAsync() returns a promise that will resolve when the GPU buffer is mapped */
+  await gpuBufferResult.mapAsync(GPUMapMode.READ)
+  const finalBuffer = gpuBufferResult.getMappedRange()
 
-    /** Finish timing GPU execution */
-    var end = window.performance.now()
+  /** Finish timing GPU execution */
+  var end = window.performance.now()
 
-    /** Log results */
-    console.log(new Float32Array(finalBuffer))
-    alert(new Float32Array(finalBuffer))
-    console.log(`Execution time on GPU is: ${end - start} ms`)
-    alert(`Execution time on GPU is: ${end - start} ms`)
-  })()
+  /** Log results */
+  result = new Float32Array(finalBuffer)
+  console.log(new Float32Array(finalBuffer))
+  // alert(new Float32Array(finalBuffer))
+  console.log(`Execution time on GPU is: ${end - start} ms`)
+  // alert(`Execution time on GPU is: ${end - start} ms`)
+  return result
 }

@@ -1,31 +1,84 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <title>WebGPU -- Ethhash POW Javascript Miner</title>
-        <!-- <link rel="stylesheet" href="styles.css"> -->
-    </head>
+  <head>
+    <title>WebGPU -- Ethhash POW Javascript Miner</title>
 
-    <body>
-        <div id="not-supported" style="display: none">
-        WebGPU not supported! Please visit <a href="//webgpu.io">webgpu.io</a> to see the current implementation status.
-        </div>
-    </body>   
-    <script type="module" src="gpu_compute.js">
-        function waitForBroswer() {
-            return new Promise(function(resolve, reject) {
-                setTimeout(function() {
-                    resolve();
-                }, 0);
-            });
-        }
+    <script src="gpu_compute.js"></script>
+    <script src="cpu_compute.js"></script>
+    <script>
+      let matrix1 = []
+      let matrix2 = []
+      let matrixResultCPU = []
+      let matrixResultGPU = []
     </script>
-    <script type="module" src="cpu_compute.js">
-        function waitForBroswer() {
-            return new Promise(function(resolve, reject) {
-                setTimeout(function() {
-                    resolve();
-                }, 0);
-            });
+    <script>
+      function generateMatrix(matrixDimension) {
+        const matrix = []
+        let elementCount = matrixDimension * matrixDimension
+        for (let i = 0; i < elementCount; i++) {
+          matrix.push(Math.random() * 10)
         }
+        return matrix
+      }
+      const compareArrays = (a, b) =>
+        a.length === b.length &&
+        a.every((element, index) => {
+          if (element.toFixed(0) != b[index].toFixed(0))
+            console.log(element.toFixed(0), b[index].toFixed(0))
+          return element.toFixed(0) == b[index].toFixed(0)
+        })
     </script>
+  </head>
+
+  <body>
+    <div id="not-supported" style="display: none">
+      WebGPU not supported! Please visit <a href="//webgpu.io">webgpu.io</a> to
+      see the current implementation status.
+    </div>
+  </body>
+
+  <h1>Web GPU Matrix Demo</h1>
+  <form>
+    <label for="size">Matrix Size:</label>
+    <input type="number" id="size" name="size" />
+    <button
+      type="submit"
+      onclick="(function(event) {
+                event.preventDefault();
+                const size = document.getElementById('size').value;
+                matrix1 = generateMatrix(size);
+                matrix2 = generateMatrix(size);
+                console.log('Matrix 1:', matrix1);
+                console.log('Matrix 2:', matrix2);
+        })(event)"
+    >
+      Create Matrix
+    </button>
+    <button
+      onclick="(function(event) {
+        event.preventDefault();
+        matrixResultCPU = matrixMultCPU(matrix1, matrix2);
+})(event)"
+    >
+      Run CPU test
+    </button>
+    <button
+      onclick="(async function(event) {
+        event.preventDefault();
+        matrixResultGPU = await matrixMultGPU(matrix1, matrix2);
+})(event)"
+    >
+      Run GPU test
+    </button>
+    <button
+      onclick="(function(event) {
+        event.preventDefault();
+        console.log('Matrix Result CPU:', matrixResultCPU);
+        console.log('Matrix Result GPU:', matrixResultGPU);
+        console.log('Matrix Result CPU == Matrix Result GPU:', compareArrays(matrixResultCPU, matrixResultGPU));
+})(event)"
+    >
+      Print Results
+    </button>
+  </form>
 </html>
