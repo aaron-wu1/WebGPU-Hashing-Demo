@@ -7,6 +7,8 @@
     "test": "tests"
   },
   "scripts": {
+    "mat": "node ./matrix_server.js",
+    "sha": "node ./sha_server.js",
     "coverage": "nyc --reporter=lcov npm run test",
     "lint": "standard",
     "test": "node ./tests/"

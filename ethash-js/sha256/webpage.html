@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>WebGPU -- Ethhash POW Javascript Miner</title>
+
+    <script src="gpu_sha256_2.js"></script>
+    <script src="cpu_sha256.js"></script>
+    <script>
+      let inputCPU = []
+      let inputGPU = []
+      const encoder = new TextEncoder()
+      function encodeAndAlignMessage(str) {
+        const bytes = encoder.encode(str)
+
+        // Calculate padding needed to make the length a multiple of 4
+        const paddingNeeded = (4 - (bytes.length % 4)) % 4
+
+        // Create a new Uint8Array with the extra space for padding
+        const alignedBytes = new Uint8Array(bytes.length + paddingNeeded)
+
+        // Copy the original bytes into the new array
+        alignedBytes.set(bytes)
+
+        // Optionally, fill the extra bytes with zeros (Uint8Array is zero-initialized by default)
+        // alignedBytes.fill(0, bytes.length);
+
+        return alignedBytes
+      }
+    </script>
+    <script src="gen_input.js"></script>
+  </head>
+
+  <body>
+    <div id="not-supported" style="display: none">
+      WebGPU not supported! Please visit <a href="//webgpu.io">webgpu.io</a> to
+      see the current implementation status.
+    </div>
+  </body>
+
+  <h1>WebGPU SHA256 Demo</h1>
+  <form>
+    <label for="count">Random String Count:</label>
+    <input type="number" id="count" name="count" />
+    <label for="size">String Size:</label>
+    <input type="number" id="size" name="size" />
+    <button
+      type="submit"
+      onclick="(function(event) {
+        event.preventDefault();
+        const strSize = document.getElementById('size').value;
+        const count = document.getElementById('count').value;
+        for (let i = 0; i < count; i++) {
+          let strSize = 5;
+          let randomStr = generateRandomInputAlphaNum(strSize);
+          inputCPU.push(randomStr);
+          inputGPU.push(encodeAndAlignMessage(randomStr));
+        }
+        console.log('Input CPU:', inputCPU);
+        console.log('Input GPU:', inputGPU);
+      })(event)"
+    >
+      Create Input Strings
+    </button>
+    <button
+      onclick="(function(event) {
+        event.preventDefault();
+        sha256ResultCPU = computeSHA256CPU(inputCPU);
+        console.log('SHA256 Result CPU:', sha256ResultCPU);
+})(event)"
+    >
+      Run CPU test
+    </button>
+    <button
+      onclick="(async function(event) {
+        event.preventDefault();
+        sha256ResultGPU = await computeSHA256GPU(inputGPU);
+        console.log('SHA256 Result GPU:', sha256ResultGPU);
+})(event)"
+    >
+      Run GPU test
+    </button>
+    <button
+      onclick="(function(event) {
+        event.preventDefault();
+        console.log('-------------PRINTING RESULTS-------------');
+        console.log('SHA256 Result CPU:', sha256ResultCPU);
+        console.log('SHA256 Result GPU:', sha256ResultGPU);
+        console.log('SHA256 Result CPU == SHA256 Result GPU:', compareArrays(sha256ResultCPU, sha256ResultGPU));
+})(event)"
+    >
+      Print Results
+    </button>
+  </form>
+</html>
