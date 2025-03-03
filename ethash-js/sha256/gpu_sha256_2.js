@@ -1,17 +1,35 @@
+const byteToHex = []
+
+for (let n = 0; n <= 0xff; ++n) {
+  const hexOctet = n.toString(16).padStart(2, '0')
+  byteToHex.push(hexOctet)
+}
+
+function hex(buff) {
+  // const buff = new Uint8Array(arrayBuffer)
+  const hexOctets = [] // new Array(buff.length) is even faster (preallocates necessary array size), then use hexOctets[i] instead of .push()
+
+  for (let i = 0; i < buff.length; ++i) hexOctets.push(byteToHex[buff[i]])
+
+  return hexOctets.join('')
+}
+
 // Helper to pretty print the hashes
 async function computeSHA256GPU(input) {
+  // Start timing of GPU computation
+  const start = window.performance.now()
   const hashes = await sha256_gpu(input)
-  console.log('test')
+  // Finish timing the GPU computation
+  var end = window.performance.now()
   let result = []
   for (let i = 0; i < hashes.length; i += 32) {
-    result.push(
-      hashes
-        .subarray(i, i + 32)
-        .reduce((a, b) => a + b.toString(16).padStart(2, '0'), '')
-    )
+    result.push(hex(hashes.subarray(i, i + 32)))
   }
-  return result
+
+  return [result, end - start]
 }
+
+// Reference: https://github.com/MarcoCiaramella/sha256-gpu/blob/main/index.js
 
 function shader(device) {
   return `

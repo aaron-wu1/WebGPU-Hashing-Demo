@@ -2,10 +2,15 @@
 // Returns hashes
 function computeSHA256CPU(inputs) {
   let res = []
+  // Start timing the CPU computation
+  const start = window.performance.now()
   for (let input of inputs) {
     res.push(sha256(input))
   }
-  return res
+
+  // Finish timing the CPU computation
+  var end = window.performance.now()
+  return [res, end - start]
 }
 
 /**

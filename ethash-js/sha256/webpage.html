@@ -8,6 +8,10 @@
     <script>
       let inputCPU = []
       let inputGPU = []
+      let sha256ResultCPU = []
+      let sha256ResultGPU = []
+      let cpuDuration = 0
+      let gpuDuration = 0
       const encoder = new TextEncoder()
       function encodeAndAlignMessage(str) {
         const bytes = encoder.encode(str)
@@ -26,6 +30,13 @@
 
         return alignedBytes
       }
+
+      const compareArrays = (a, b) =>
+        a.length === b.length &&
+        a.every((element, index) => {
+          if (element != b[index]) console.log(element, b[index])
+          return element == b[index]
+        })
     </script>
     <script src="gen_input.js"></script>
   </head>
@@ -47,10 +58,11 @@
       type="submit"
       onclick="(function(event) {
         event.preventDefault();
+        inputCPU = []
+        inputGPU = [] 
         const strSize = document.getElementById('size').value;
         const count = document.getElementById('count').value;
         for (let i = 0; i < count; i++) {
-          let strSize = 5;
           let randomStr = generateRandomInputAlphaNum(strSize);
           inputCPU.push(randomStr);
           inputGPU.push(encodeAndAlignMessage(randomStr));
@@ -64,8 +76,8 @@
     <button
       onclick="(function(event) {
         event.preventDefault();
-        sha256ResultCPU = computeSHA256CPU(inputCPU);
-        console.log('SHA256 Result CPU:', sha256ResultCPU);
+        [sha256ResultCPU, cpuDuration] = computeSHA256CPU(inputGPU);
+        console.log('SHA256 Result CPU:', sha256ResultCPU, 'Duration: ',  cpuDuration);
 })(event)"
     >
       Run CPU test
@@ -73,8 +85,8 @@
     <button
       onclick="(async function(event) {
         event.preventDefault();
-        sha256ResultGPU = await computeSHA256GPU(inputGPU);
-        console.log('SHA256 Result GPU:', sha256ResultGPU);
+        [sha256ResultGPU, gpuDuration] = await computeSHA256GPU(inputGPU);
+        console.log('SHA256 Result GPU:', sha256ResultGPU, 'Duration: ',  gpuDuration);
 })(event)"
     >
       Run GPU test
@@ -85,6 +97,7 @@
         console.log('-------------PRINTING RESULTS-------------');
         console.log('SHA256 Result CPU:', sha256ResultCPU);
         console.log('SHA256 Result GPU:', sha256ResultGPU);
+        console.log(`SHA256 Result CPU Duration: ${cpuDuration} SHA256 Result GPU Duration: ${gpuDuration}`);
         console.log('SHA256 Result CPU == SHA256 Result GPU:', compareArrays(sha256ResultCPU, sha256ResultGPU));
 })(event)"
     >
