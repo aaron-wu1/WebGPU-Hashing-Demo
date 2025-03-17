@@ -1,6 +1,8 @@
 # WebGPU Hashing Performance Demo
 
-A small web application that showcaeses SHA256 runtime of WebGPU against a default CPU implementation.
+<img width="1282" alt="Screenshot 2025-03-17 at 2 08 08 PM" src="https://github.com/user-attachments/assets/9e5cb5e3-03a4-471e-ac31-ff0933daf2a6" />
+
+A demo comparing SHA-256 performance on WebGPU versus a CPU implementation.
 
 ## Quickstart
 
