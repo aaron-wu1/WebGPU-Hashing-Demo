@@ -3,7 +3,7 @@
   <head>
     <title>WebGPU -- Ethhash POW Javascript Miner</title>
 
-    <script src="gpu_sha256_2.js"></script>
+    <script src="gpu_sha256.js"></script>
     <script src="cpu_sha256.js"></script>
     <script>
       let inputCPU = []
@@ -109,13 +109,14 @@
       event.preventDefault();
       data = []
       //let fixedCount = [10 ** 1, 10 ** 2, 10 ** 3, 10 ** 4, 10 ** 5, 10 ** 6];
+      
       let fixedCount = [10 ** 1, 10 ** 2, 10 ** 3, 10 ** 4, 10 ** 5, 2 * 10 ** 5,  4 * 10 ** 5,  6 * 10 ** 5,  8 * 10 ** 5, 10 ** 6];
       for (let count of fixedCount) {
         inputCPU = []
         inputGPU = [] 
         for (let i = 0; i < count; i++) {
           let randomStr = generateRandomInputAlphaNum(32);
-          inputCPU.push(randomStr);
+          //inputCPU.push(randomStr);
           inputGPU.push(encodeAndAlignMessage(randomStr));
         }
       [sha256ResultCPU, cpuDuration] = computeSHA256CPU(inputGPU);
@@ -130,6 +131,92 @@
 })(event)"
     >
       Run Experiment
+    </button>
+    <button
+      onclick="(async function(event) {
+      event.preventDefault();
+      data = []
+      //let fixedCount = [10 ** 1, 10 ** 2, 10 ** 3, 10 ** 4, 10 ** 5, 10 ** 6];
+      
+      let fixedCount = [10 ** 1, 10 ** 2, 10 ** 3, 10 ** 4, 10 ** 5, 2 * 10 ** 5,  4 * 10 ** 5,  6 * 10 ** 5,  8 * 10 ** 5, 10 ** 6];
+      for (let count of fixedCount) {
+        inputCPU = []
+        inputGPU = [] 
+        for (let i = 0; i < count; i++) {
+          let randomStr = generateRandomInputAlphaNum(32);
+         //inputCPU.push(randomStr);
+          inputGPU.push(encodeAndAlignMessage(randomStr));
+        }
+      [sha256ResultCPU, cpuDuration] = computeSHA256CPU(inputGPU);
+      //[sha256ResultGPU, gpuDuration] = await computeSHA256GPU(inputGPU);
+      console.log(`At Count: ${count} SHA256 Result CPU Duration: ${cpuDuration}`);
+      // console.log('SHA256 Result CPU == SHA256 Result GPU:', compareArrays(sha256ResultCPU, sha256ResultGPU));
+      data.push([count, cpuDuration, 0]);
+    }
+    const csv = data.map(row => row.join('\t')).join('\n');
+
+    console.log(csv);
+})(event)"
+    >
+      Run Experiment (CPU Only)
+    </button>
+
+    <button
+      onclick="(async function(event) {
+    event.preventDefault();
+    data = []
+    //let fixedCount = [10 ** 1, 10 ** 2, 10 ** 3, 10 ** 4, 10 ** 5, 10 ** 6];
+    
+    let fixedCount = [10 ** 1, 10 ** 2, 10 ** 3, 10 ** 4, 10 ** 5, 2 * 10 ** 5,  4 * 10 ** 5,  6 * 10 ** 5,  8 * 10 ** 5, 10 ** 6];
+    for (let count of fixedCount) {
+      inputCPU = []
+      inputGPU = [] 
+      for (let i = 0; i < count; i++) {
+        let randomStr = generateRandomInputAlphaNum(32);
+        //inputCPU.push(randomStr);
+        inputGPU.push(encodeAndAlignMessage(randomStr));
+      }
+    // [sha256ResultCPU, cpuDuration] = computeSHA256CPU(inputGPU);
+    [sha256ResultGPU, gpuDuration] = await computeSHA256GPU(inputGPU);
+    console.log(`At Count: ${count} SHA256 Result GPU Duration: ${gpuDuration}`);
+    //console.log('SHA256 Result CPU == SHA256 Result GPU:', compareArrays(sha256ResultCPU, sha256ResultGPU));
+    data.push([count, 0, gpuDuration]);
+  }
+  const csv = data.map(row => row.join('\t')).join('\n');
+
+  console.log(csv);
+})(event)"
+    >
+      Run Experiment (GPU Only)
+    </button>
+
+    <button
+      onclick="(async function(event) {
+    event.preventDefault();
+    data = []
+    //let fixedCount = [10 ** 1, 10 ** 2, 10 ** 3, 10 ** 4, 10 ** 5, 10 ** 6];
+    
+    let fixedCount = [10 ** 1, 10 ** 2, 10 ** 3, 10 ** 4, 10 ** 5, 2 * 10 ** 5,  4 * 10 ** 5,  6 * 10 ** 5,  8 * 10 ** 5, 10 ** 6];
+    for (let count of fixedCount) {
+      inputCPU = []
+      inputGPU = [] 
+      for (let i = 0; i < count; i++) {
+        let randomStr = generateRandomInputAlphaNum(32);
+        //inputCPU.push(randomStr);
+        inputGPU.push(encodeAndAlignMessage(randomStr));
+      }
+    [sha256ResultCPU, cpuDuration] = computeSHA256CPU(inputGPU);
+    [sha256ResultGPU, gpuDuration] = await computeSHA256GPU(inputGPU);
+   // console.log(`At Count: ${count} SHA256 Result CPU Duration: ${cpuDuration} SHA256 Result GPU Duration: ${gpuDuration}`);
+   // console.log('SHA256 Result CPU == SHA256 Result GPU:', compareArrays(sha256ResultCPU, sha256ResultGPU));
+    data.push([count, cpuDuration, gpuDuration]);
+  }
+  const csv = data.map(row => row.join('\t')).join('\n');
+
+  console.log(csv);
+})(event)"
+    >
+      Run Experiment (only final log)
     </button>
   </form>
 </html>

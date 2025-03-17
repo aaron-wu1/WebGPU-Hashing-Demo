@@ -15,18 +15,34 @@ function hex(buff) {
 }
 
 // Helper to pretty print the hashes
-async function computeSHA256GPU(input) {
+async function computeSHA256GPU(inputs) {
   // Start timing of GPU computation
-  const start = window.performance.now()
-  const hashes = await sha256_gpu(input)
-  // Finish timing the GPU computation
-  var end = window.performance.now()
-  let result = []
-  for (let i = 0; i < hashes.length; i += 32) {
-    result.push(hex(hashes.subarray(i, i + 32)))
-  }
+  // const start = window.performance.now()
+  performance.mark(`GPU-computeSHA256-start-${inputs.length}`)
 
-  return [result, end - start]
+  const hashes = await sha256_gpu(inputs)
+  // Finish timing the GPU computation
+  // var end = window.performance.now()
+
+  // let result = []
+  // for (let i = 0; i < hashes.length; i += 32) {
+  //   result.push(hex(hashes.subarray(i, i + 32)))
+  // }
+  let result = Array.from({ length: Math.ceil(hashes.length / 32) }, (_, i) =>
+    hex(hashes.subarray(i * 32, (i + 1) * 32))
+  )
+
+  performance.mark(`GPU-computeSHA256-end-${inputs.length}`)
+  performance.measure(
+    `GPU-computeSHA256-${inputs.length}`,
+    `GPU-computeSHA256-start-${inputs.length}`,
+    `GPU-computeSHA256-end-${inputs.length}`
+  )
+  const latency = performance.getEntriesByName(
+    `GPU-computeSHA256-${inputs.length}`
+  )[0].duration
+
+  return [result, latency]
 }
 
 // Reference: https://github.com/MarcoCiaramella/sha256-gpu/blob/main/index.js
@@ -84,7 +100,7 @@ fn sha256(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
     let message_base_index = index * message_sizes[1];
-    let hash_base_index = index * (256u / 32u);
+    let hash_base_index = index * (256u / 32u);    
 
     // == padding == //
 

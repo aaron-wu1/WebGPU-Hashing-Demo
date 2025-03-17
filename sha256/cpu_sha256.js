@@ -3,14 +3,24 @@
 function computeSHA256CPU(inputs) {
   let res = []
   // Start timing the CPU computation
-  const start = window.performance.now()
+  // const start = window.performance.now()
+  performance.mark(`CPU-computeSHA256-start-${inputs.length}`)
   for (let input of inputs) {
     res.push(sha256(input))
   }
 
   // Finish timing the CPU computation
-  var end = window.performance.now()
-  return [res, end - start]
+  // var end = window.performance.now()
+  performance.mark(`CPU-computeSHA256-end-${inputs.length}`)
+  performance.measure(
+    `CPU-computeSHA256-${inputs.length}`,
+    `CPU-computeSHA256-start-${inputs.length}`,
+    `CPU-computeSHA256-end-${inputs.length}`
+  )
+  const latency = performance.getEntriesByName(
+    `CPU-computeSHA256-${inputs.length}`
+  )[0].duration
+  return [res, latency]
 }
 
 /**

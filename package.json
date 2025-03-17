@@ -1,0 +1,38 @@
+{
+  "name": "webgpu-hashing-demo",
+  "version": "0.0.8",
+  "description": "A simple demo of WebGPU hashing runtimes",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "mat": "node ./matrix_server.js",
+    "sha": "node  --expose-gc ./sha_server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aaron-wu1/WebGPU-Hashing-Demo.git"
+  },
+  "keywords": [
+    "webgpu",
+    "hashing",
+    "demo"
+  ],
+  "author": "mjbecze <mjbecze@gmail.com>",
+  "license": "MPL-2.0",
+  "bugs": {
+    "url": "https://github.com/aaron-wu1/WebGPU-Hashing-Demo/issues"
+  },
+  "homepage": "https://github.com/aaron-wu1/WebGPU-Hashing-Demo#readme",
+  "dependencies": {
+  },
+  "devDependencies": {
+  },
+  "standard": {
+    "globals": [
+      "describe",
+      "it"
+    ]
+  }
+}
